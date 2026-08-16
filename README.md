@@ -6,6 +6,12 @@ A modern, native WireGuard VPN widget and management panel for the **Omarchy Des
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)
 ![Category: Network](https://img.shields.io/badge/Category-Network-orange?style=flat-square)
 
+<p align="center">
+  <img src="assets/preview.png" width="360" alt="WireGuard VPN Live Metrics" />
+  &nbsp;&nbsp;
+  <img src="assets/preview-profiles.png" width="360" alt="WireGuard Profiles List" />
+</p>
+
 ---
 
 ## Features
