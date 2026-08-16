@@ -165,14 +165,6 @@ Item {
     notifyProcess.running = true
   }
 
-  readonly property bool anyWorking: availableBackends.some(function(backend) { return backend.busy })
-
-  onAnyWorkingChanged: {
-    if (!anyWorking) {
-      ipSettle.restart()
-    }
-  }
-
   onConnectionKeyChanged: {
     var oldKey = _previousConnectionKey
     _previousConnectionKey = connectionKey
@@ -209,7 +201,7 @@ Item {
       _ipPending = true
       return
     }
-    ipFetching = true
+    if (publicIp === "") ipFetching = true
     ipFailed = false
     ipProcess.running = true
   }

@@ -562,7 +562,7 @@ Panel {
                 }
 
                 Text {
-                  text: vpn.ipFetching
+                  text: (vpn.ipFetching && vpn.publicIp === "")
                     ? "Checking…"
                     : (vpn.publicIp !== "" ? vpn.publicIp : (vpn.ipFailed ? "unavailable" : "—"))
                   color: vpn.anyConnected ? "#38bdf8" : root.foreground
