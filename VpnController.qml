@@ -137,8 +137,14 @@ Item {
   // connect, a disconnect, a server switch — means the exit address changed,
   // which is the only thing that should cost a network round trip. No polling.
   readonly property string connectionKey: {
-    var backend = connectedBackend
-    return backend ? backend.backendId + "|" + backend.summary : "direct"
+    var activeBackend = null
+    for (var i = 0; i < availableBackends.length; i++) {
+      if (availableBackends[i]._activeNow) {
+        activeBackend = availableBackends[i]
+        break
+      }
+    }
+    return activeBackend ? activeBackend.backendId + "|" + activeBackend.summary : "direct"
   }
 
   property bool notificationsEnabled: true
@@ -181,8 +187,9 @@ Item {
     ipSettle.restart()
 
     if (oldKey !== "" && oldKey !== undefined) {
-      if (connectedBackend !== null) {
-        notify("VPN Connected", connectedBackend.summary, Model.GLYPH_SHIELD, "normal")
+      if (connectionKey !== "direct") {
+        var summary = connectionKey.split("|")[1] || "Active"
+        notify("VPN Connected", summary, Model.GLYPH_SHIELD, "normal")
       } else if (oldKey !== "direct") {
         notify("VPN Disconnected", "Reverted to direct network", Model.GLYPH_SHIELD_OFF, "normal")
       }
@@ -210,7 +217,7 @@ Item {
   // early returns the old address.
   Timer {
     id: ipSettle
-    interval: 1500
+    interval: 800
     repeat: false
     onTriggered: root.refreshPublicIp()
   }
