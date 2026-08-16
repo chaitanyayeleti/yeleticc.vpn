@@ -15,6 +15,7 @@ var GLYPH_DOWNLOAD = String.fromCodePoint(0xF01DA)
 var GLYPH_UPLOAD = String.fromCodePoint(0xF01DC)
 var GLYPH_SPEED = String.fromCodePoint(0xF04D4)
 var GLYPH_LOCK = String.fromCodePoint(0xF033E)
+var GLYPH_SHIELD_OFF = String.fromCodePoint(0xF099E)
 
 // ----------------------------------------------------------------- shared
 

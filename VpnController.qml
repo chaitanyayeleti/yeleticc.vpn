@@ -150,11 +150,18 @@ Item {
     command: []
   }
 
-  function notify(title, message, icon, urgency) {
+  function notify(title, message, glyph, urgency) {
     if (!notificationsEnabled) return
     var u = urgency || "normal"
-    var ic = icon || "network-vpn"
-    notifyProcess.command = ["notify-send", "-a", "WireGuard", "-i", ic, "-u", u, title, message]
+    var g = glyph || Model.GLYPH_SHIELD
+    notifyProcess.command = [
+      "omarchy-notification-send",
+      "-g", g,
+      "-u", u,
+      "--exec", "omarchy-shell yeleticc.vpn open",
+      title,
+      message || ""
+    ]
     notifyProcess.running = true
   }
 
@@ -183,9 +190,9 @@ Item {
 
     if (oldKey !== "" && oldKey !== undefined) {
       if (connectedBackend !== null) {
-        notify("VPN Connected", connectedBackend.summary, "network-vpn", "normal")
+        notify("VPN Connected", connectedBackend.summary, Model.GLYPH_SHIELD, "normal")
       } else if (oldKey !== "direct") {
-        notify("VPN Disconnected", "Reverted to direct network", "network-vpn-disconnected", "normal")
+        notify("VPN Disconnected", "Reverted to direct network", Model.GLYPH_SHIELD_OFF, "normal")
       }
     }
   }
