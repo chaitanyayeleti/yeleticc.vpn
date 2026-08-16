@@ -158,6 +158,14 @@ Item {
     notifyProcess.running = true
   }
 
+  readonly property bool anyWorking: availableBackends.some(function(backend) { return backend.busy })
+
+  onAnyWorkingChanged: {
+    if (!anyWorking) {
+      ipSettle.restart()
+    }
+  }
+
   onConnectionKeyChanged: {
     var oldKey = _previousConnectionKey
     _previousConnectionKey = connectionKey
