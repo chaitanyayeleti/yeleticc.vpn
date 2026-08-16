@@ -554,19 +554,17 @@ Panel {
                 spacing: Style.space(6)
 
                 Text {
+                  id: flagOrGlobe
                   text: vpn.geoFlag !== "" ? vpn.geoFlag : Model.GLYPH_GLOBE
-                  color: ipLabel.badgeColor
-                  font.family: root.fontFamily
-                  font.pixelSize: vpn.geoFlag !== "" ? Style.font.body : Style.font.bodySmall
+                  color: vpn.geoFlag !== "" ? undefined : ipLabel.badgeColor
+                  font.pixelSize: vpn.geoFlag !== "" ? Style.space(13) : Style.font.bodySmall
                   anchors.verticalCenter: parent.verticalCenter
                 }
 
                 Text {
                   text: vpn.ipFetching
                     ? "Checking…"
-                    : (vpn.publicIp !== ""
-                        ? (vpn.publicIp + (vpn.locationText !== "" ? " · " + vpn.locationText : ""))
-                        : (vpn.ipFailed ? "unavailable" : "—"))
+                    : (vpn.publicIp !== "" ? vpn.publicIp : (vpn.ipFailed ? "unavailable" : "—"))
                   color: vpn.anyConnected ? "#38bdf8" : root.foreground
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.bodySmall
@@ -587,11 +585,23 @@ Panel {
 
               PanelToolTip {
                 visible: ipMouse.containsMouse && ipLabel.copyable
-                text: root.ipCopied
-                  ? "Copied to clipboard!"
-                  : (vpn.anyConnected
-                      ? ("VPN: " + vpn.publicIp + (vpn.locationText !== "" ? " (" + vpn.locationText + ")" : "") + (vpn.geoOrg !== "" ? "\nISP: " + vpn.geoOrg : "") + "\nClick to copy IP")
-                      : ("Direct: " + vpn.publicIp + (vpn.locationText !== "" ? " (" + vpn.locationText + ")" : "") + (vpn.geoOrg !== "" ? "\nISP: " + vpn.geoOrg : "") + "\nClick to copy IP"))
+                text: {
+                  if (root.ipCopied) return "Copied to clipboard!"
+                  var lines = []
+                  lines.push((vpn.anyConnected ? "VPN Exit IP: " : "Direct Public IP: ") + vpn.publicIp)
+                  if (vpn.locationText !== "") {
+                    var fullLoc = (vpn.geoFlag !== "" ? vpn.geoFlag + " " : "") + vpn.locationText
+                    if (vpn.geoRegion !== "" && vpn.locationText.indexOf(vpn.geoRegion) === -1) {
+                      fullLoc += " (" + vpn.geoRegion + ")"
+                    }
+                    lines.push("Location: " + fullLoc)
+                  }
+                  if (vpn.geoOrg !== "") {
+                    lines.push("Network: " + vpn.geoOrg)
+                  }
+                  lines.push("Click to copy")
+                  return lines.join("\n")
+                }
                 fontFamily: root.fontFamily
               }
             }
