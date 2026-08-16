@@ -129,11 +129,7 @@ Item {
     publicIp = ""
     ipFailed = false
     _ipRetryCount = 0
-    if (connectedBackend !== null) {
-      ipFetching = true
-    } else {
-      ipFetching = false
-    }
+    ipFetching = true
     ipSettle.restart()
   }
 
@@ -146,7 +142,7 @@ Item {
       _ipPending = true
       return
     }
-    if (connectedBackend !== null) ipFetching = true
+    ipFetching = true
     ipFailed = false
     ipProcess.running = true
   }
@@ -165,7 +161,7 @@ Item {
     interval: 2000
     repeat: false
     onTriggered: {
-      if (root.connectedBackend !== null && root.publicIp === "") {
+      if (root.publicIp === "") {
         root.refreshPublicIp()
       }
     }

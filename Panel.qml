@@ -527,22 +527,25 @@ Panel {
               + Style.space(12)
 
             Item {
-              // Only a live tunnel has an exit address worth reporting.
               id: ipLabel
-              visible: vpn.connectedBackend !== null
+              visible: true
               anchors.left: parent.left
               anchors.verticalCenter: parent.verticalCenter
               width: Math.min(ipRow.implicitWidth + Style.space(16), parent.width - header.controlsWidth)
               height: Math.max(ipRow.implicitHeight + Style.space(6), Style.space(26))
 
               readonly property bool copyable: vpn.publicIp !== "" && !vpn.ipFetching
+              readonly property color badgeColor: vpn.anyConnected ? "#38bdf8" : root.dim
+              readonly property color badgeBg: vpn.anyConnected
+                ? (ipMouse.containsMouse ? Util.alpha("#38bdf8", 0.18) : Util.alpha("#38bdf8", 0.09))
+                : (ipMouse.containsMouse ? Util.alpha(root.foreground, 0.12) : Util.alpha(root.foreground, 0.06))
 
               Rectangle {
                 anchors.fill: parent
                 radius: Style.space(4)
-                color: ipMouse.containsMouse ? Util.alpha("#38bdf8", 0.18) : Util.alpha("#38bdf8", 0.09)
+                color: ipLabel.badgeBg
                 border.width: 1
-                border.color: ipMouse.containsMouse ? "#38bdf8" : Util.alpha("#38bdf8", 0.30)
+                border.color: ipMouse.containsMouse ? ipLabel.badgeColor : Util.alpha(ipLabel.badgeColor, 0.35)
               }
 
               Row {
@@ -552,7 +555,7 @@ Panel {
 
                 Text {
                   text: Model.GLYPH_GLOBE
-                  color: "#38bdf8"
+                  color: ipLabel.badgeColor
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.bodySmall
                   anchors.verticalCenter: parent.verticalCenter
@@ -562,7 +565,7 @@ Panel {
                   text: vpn.ipFetching
                     ? "Checking…"
                     : (vpn.publicIp !== "" ? vpn.publicIp : (vpn.ipFailed ? "unavailable" : "—"))
-                  color: "#38bdf8"
+                  color: vpn.anyConnected ? "#38bdf8" : root.foreground
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.bodySmall
                   font.weight: Font.DemiBold
@@ -582,7 +585,9 @@ Panel {
 
               PanelToolTip {
                 visible: ipMouse.containsMouse && ipLabel.copyable
-                text: root.ipCopied ? "Copied to clipboard!" : "Click to copy Public IP"
+                text: root.ipCopied
+                  ? "Copied to clipboard!"
+                  : (vpn.anyConnected ? "Click to copy VPN Public IP" : "Click to copy Direct Public IP")
                 fontFamily: root.fontFamily
               }
             }
