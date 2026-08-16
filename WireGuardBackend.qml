@@ -277,6 +277,7 @@ Item {
   }
 
   property var _pendingFiles: null
+  property var upInterfaces: []
 
   Process {
     id: healthProcess
