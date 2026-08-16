@@ -109,9 +109,25 @@ Item {
     return ""
   }
 
-  // ------------------------------------------------------------- public IP
+  // ------------------------------------------------------------- public IP & Geo
 
   property string publicIp: ""
+  property string geoCity: ""
+  property string geoRegion: ""
+  property string geoCountry: ""
+  property string geoFlag: ""
+  property string geoOrg: ""
+  property string locationText: ""
+  readonly property var geoInfo: ({
+    ip: publicIp,
+    city: geoCity,
+    region: geoRegion,
+    country: geoCountry,
+    flag: geoFlag,
+    org: geoOrg,
+    locationText: locationText
+  })
+
   property bool ipFetching: false
   property bool ipFailed: false
   property bool _ipPending: false
@@ -127,6 +143,12 @@ Item {
 
   onConnectionKeyChanged: {
     publicIp = ""
+    geoCity = ""
+    geoRegion = ""
+    geoCountry = ""
+    geoFlag = ""
+    geoOrg = ""
+    locationText = ""
     ipFailed = false
     _ipRetryCount = 0
     ipFetching = true
@@ -175,18 +197,25 @@ Item {
   Process {
     id: ipProcess
     running: false
-    command: ["curl", "--silent", "--fail", "--max-time", "5", "https://checkip.amazonaws.com"]
+    command: ["curl", "--silent", "--fail", "--max-time", "5", "https://ipinfo.io/json"]
     stdout: StdioCollector { id: ipStdout; waitForEnd: true }
     onExited: function(exitCode) {
       root.ipFetching = false
-      var address = Model.parsePublicIp(String(ipStdout.text || ""))
-      if (exitCode === 0 && address !== "") {
-        root.publicIp = address
+      var raw = String(ipStdout.text || "")
+      var geo = Model.parseGeoIp(raw)
+      if (exitCode === 0 && geo.ip !== "") {
+        root.publicIp = geo.ip
+        root.geoCity = geo.city
+        root.geoRegion = geo.region
+        root.geoCountry = geo.country
+        root.geoFlag = geo.flag
+        root.geoOrg = geo.org
+        root.locationText = geo.locationText
         root.ipFailed = false
         root._ipRetryCount = 0
       } else {
         root.ipFailed = true
-        if (root.connectedBackend !== null && root._ipRetryCount < 3) {
+        if (root._ipRetryCount < 3) {
           root._ipRetryCount += 1
           root.ipFetching = true
           ipRetryTimer.restart()
@@ -375,6 +404,7 @@ Item {
   WireGuardBackend {
     id: wireGuard
     settings: root.settings
+    geoInfo: root.geoInfo
   }
 
   Timer {

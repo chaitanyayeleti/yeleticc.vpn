@@ -93,6 +93,39 @@ test("parsePublicIp rejects anything that is not one", () => {
   eq(Model.parsePublicIp("1.2.3.4".padEnd(50, "0")), "")
 })
 
+test("countryCodeToFlag converts ISO country codes to Unicode emoji flags", () => {
+  eq(Model.countryCodeToFlag("CA"), "🇨🇦")
+  eq(Model.countryCodeToFlag("us"), "🇺🇸")
+  eq(Model.countryCodeToFlag("IN"), "🇮🇳")
+  eq(Model.countryCodeToFlag("DE"), "🇩🇪")
+  eq(Model.countryCodeToFlag(""), "")
+  eq(Model.countryCodeToFlag("USA"), "")
+  eq(Model.countryCodeToFlag(null), "")
+})
+
+test("parseGeoIp parses JSON response from ipinfo.io and builds location strings", () => {
+  const jsonSample = '{"ip":"195.242.214.131","city":"Montreal","region":"Quebec","country":"CA","org":"AS60068 Datacamp Limited"}'
+  const geo = Model.parseGeoIp(jsonSample)
+  eq(geo.ip, "195.242.214.131")
+  eq(geo.city, "Montreal")
+  eq(geo.region, "Quebec")
+  eq(geo.country, "CA")
+  eq(geo.flag, "🇨🇦")
+  eq(geo.org, "Datacamp Limited")
+  eq(geo.locationText, "Montreal, CA")
+})
+
+test("parseGeoIp falls back gracefully on plain text IP or error JSON", () => {
+  const plainIp = Model.parseGeoIp("1.2.3.4\n")
+  eq(plainIp.ip, "1.2.3.4")
+  eq(plainIp.flag, "")
+  eq(plainIp.locationText, "")
+
+  const invalid = Model.parseGeoIp("<html>Error</html>")
+  eq(invalid.ip, "")
+  eq(invalid.flag, "")
+})
+
 // ---------------------------------------------------------------- WireGuard
 
 test("parseWgInterfaces reads whitespace-separated interface names", () => {

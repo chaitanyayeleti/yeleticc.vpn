@@ -554,17 +554,19 @@ Panel {
                 spacing: Style.space(6)
 
                 Text {
-                  text: Model.GLYPH_GLOBE
+                  text: vpn.geoFlag !== "" ? vpn.geoFlag : Model.GLYPH_GLOBE
                   color: ipLabel.badgeColor
                   font.family: root.fontFamily
-                  font.pixelSize: Style.font.bodySmall
+                  font.pixelSize: vpn.geoFlag !== "" ? Style.font.body : Style.font.bodySmall
                   anchors.verticalCenter: parent.verticalCenter
                 }
 
                 Text {
                   text: vpn.ipFetching
                     ? "Checking…"
-                    : (vpn.publicIp !== "" ? vpn.publicIp : (vpn.ipFailed ? "unavailable" : "—"))
+                    : (vpn.publicIp !== ""
+                        ? (vpn.publicIp + (vpn.locationText !== "" ? " · " + vpn.locationText : ""))
+                        : (vpn.ipFailed ? "unavailable" : "—"))
                   color: vpn.anyConnected ? "#38bdf8" : root.foreground
                   font.family: root.fontFamily
                   font.pixelSize: Style.font.bodySmall
@@ -587,7 +589,9 @@ Panel {
                 visible: ipMouse.containsMouse && ipLabel.copyable
                 text: root.ipCopied
                   ? "Copied to clipboard!"
-                  : (vpn.anyConnected ? "Click to copy VPN Public IP" : "Click to copy Direct Public IP")
+                  : (vpn.anyConnected
+                      ? ("VPN: " + vpn.publicIp + (vpn.locationText !== "" ? " (" + vpn.locationText + ")" : "") + (vpn.geoOrg !== "" ? "\nISP: " + vpn.geoOrg : "") + "\nClick to copy IP")
+                      : ("Direct: " + vpn.publicIp + (vpn.locationText !== "" ? " (" + vpn.locationText + ")" : "") + (vpn.geoOrg !== "" ? "\nISP: " + vpn.geoOrg : "") + "\nClick to copy IP"))
                 fontFamily: root.fontFamily
               }
             }
@@ -791,7 +795,9 @@ Panel {
                 accentColor: "#a855f7"
                 title: "TUNNEL"
                 value: (root.backend && root.backend.activeHealth && root.backend.activeHealth.defaultRoute) ? "Full Route" : "Split Route"
-                subtext: (root.backend && root.backend.endpoint !== "") ? Model.elide(root.backend.endpoint, 18) : "WireGuard"
+                subtext: vpn.locationText !== ""
+                  ? ((vpn.geoFlag !== "" ? vpn.geoFlag + " " : "") + vpn.locationText)
+                  : ((root.backend && root.backend.endpoint !== "") ? Model.elide(root.backend.endpoint, 18) : "WireGuard")
                 fontFamily: root.fontFamily
               }
             }

@@ -45,6 +45,47 @@ function parsePublicIp(raw) {
   return ""
 }
 
+function countryCodeToFlag(countryCode) {
+  var code = String(countryCode || "").trim().toUpperCase()
+  if (code.length !== 2 || !/^[A-Z]{2}$/.test(code)) return ""
+  var base = 127397 // (0x1F1E6 - 'A'.charCodeAt(0))
+  return String.fromCodePoint(base + code.charCodeAt(0)) + String.fromCodePoint(base + code.charCodeAt(1))
+}
+
+function parseGeoIp(raw) {
+  var text = String(raw || "").trim()
+  var result = {
+    ip: "",
+    city: "",
+    region: "",
+    country: "",
+    flag: "",
+    org: "",
+    locationText: ""
+  }
+  if (text === "") return result
+
+  try {
+    var data = JSON.parse(text)
+    if (data && typeof data === "object") {
+      result.ip = parsePublicIp(data.ip || data.query || "")
+      result.city = String(data.city || "").trim()
+      result.region = String(data.region || data.regionName || "").trim()
+      result.country = String(data.country || data.countryCode || "").trim()
+      result.flag = countryCodeToFlag(result.country)
+      result.org = String(data.org || "").replace(/^AS\d+\s+/, "").trim()
+
+      var locParts = []
+      if (result.city !== "") locParts.push(result.city)
+      if (result.country !== "") locParts.push(result.country)
+      result.locationText = locParts.join(", ")
+    }
+  } catch (e) {
+    result.ip = parsePublicIp(text)
+  }
+  return result
+}
+
 function elide(text, limit) {
   var value = String(text || "").replace(/\s+/g, " ").trim()
   return value.length > limit ? value.substring(0, limit - 1) + "…" : value
@@ -240,13 +281,20 @@ function formatPacketLoss(pingInfo) {
   return Math.round(pingInfo.packetLoss) + "%"
 }
 
-function wgDetails(profiles, healthByInterface, pingInfo) {
+function wgDetails(profiles, healthByInterface, pingInfo, geoInfo) {
   var rows = []
   for (var i = 0; i < profiles.length; i++) {
     if (!profiles[i].active) continue
     var health = healthByInterface ? healthByInterface[wgInterfaceFor(profiles[i].confFile)] : null
     rows.push(detail("Profile", profiles[i].name))
     rows.push(detail("Interface", wgInterfaceFor(profiles[i].confFile)))
+    if (geoInfo && (geoInfo.locationText || geoInfo.flag)) {
+      var loc = (geoInfo.flag ? geoInfo.flag + " " : "") + (geoInfo.locationText || geoInfo.country || "")
+      if (loc.trim() !== "") rows.push(detail("Location", loc.trim()))
+    }
+    if (geoInfo && geoInfo.org) {
+      rows.push(detail("ISP / Network", geoInfo.org))
+    }
     if (pingInfo !== undefined && pingInfo !== null) {
       rows.push(detail("Latency", formatLatency(pingInfo)))
       rows.push(detail("Packet loss", formatPacketLoss(pingInfo)))

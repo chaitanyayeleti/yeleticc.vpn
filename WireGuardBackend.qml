@@ -29,6 +29,7 @@ Item {
   property var _previousHealth: ({})
   property double _healthSampleTime: 0
   property var pingInfo: null
+  property var geoInfo: null
   property string actionStatus: ""
   property string lastError: ""
 
@@ -69,7 +70,7 @@ Item {
   readonly property bool _working: connectProcess.running || chainTimer.running || _desired !== -1
   readonly property bool busy: _working || listProcess.running || statusProcess.running
   readonly property string summary: Model.wgSummary(profiles)
-  readonly property var details: Model.wgDetails(profiles, healthByInterface, pingInfo)
+  readonly property var details: Model.wgDetails(profiles, healthByInterface, pingInfo, geoInfo)
   readonly property var targets: Model.wgTargets(profiles)
   readonly property string emptyText: "No profiles yet. Drop a WireGuard *.conf in " + profilesDir
   readonly property string setupHint: !_toolsPresent
