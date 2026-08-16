@@ -277,7 +277,6 @@ Item {
   }
 
   property var _pendingFiles: null
-  property bool activeMonitoring: true
 
   Process {
     id: healthProcess
@@ -320,7 +319,7 @@ Item {
       root._previousHealth = next
       root._healthSampleTime = now
 
-      if (root.connected && root.activeMonitoring && !pingProcess.running) {
+      if (root.connected && !pingProcess.running) {
         pingProcess.running = true
       }
     }

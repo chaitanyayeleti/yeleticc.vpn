@@ -141,7 +141,6 @@ Item {
     return backend ? backend.backendId + "|" + backend.summary : "direct"
   }
 
-  property bool panelOpen: false
   property bool notificationsEnabled: true
   property string _previousConnectionKey: ""
 
@@ -436,7 +435,6 @@ Item {
     id: wireGuard
     settings: root.settings
     geoInfo: root.geoInfo
-    activeMonitoring: root.panelOpen
   }
 
   Timer {
