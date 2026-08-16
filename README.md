@@ -105,4 +105,4 @@ You can interact with the plugin directly from the terminal or keybindings using
 
 ## License
 
-MIT License © 2026 [chaitanyayeleti](https://github.com/chaitanyayeleti)
+MIT License © 2026 [yeleticc](https://github.com/chaitanyayeleti)

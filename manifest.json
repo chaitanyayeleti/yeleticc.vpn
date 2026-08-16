@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "yeleticc.vpn",
   "name": "VPN",
-  "version": "1.1.0",
-  "author": "chaitanyayeleti",
+  "version": "1.2.0",
+  "author": "yeleticc",
   "license": "MIT",
   "description": "WireGuard status, tunnel health, reconnecting, and switching in the Omarchy bar, driven by wg-quick over the profiles in ~/.config/omarchy/vpn/profiles/.",
   "kinds": [
