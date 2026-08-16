@@ -277,12 +277,31 @@ Item {
   }
 
   property var _pendingFiles: null
-  property var upInterfaces: []
+  property bool activeMonitoring: true
 
   Process {
     id: healthProcess
     running: false
-    command: ["bash", "-c", "for iface in $(wg show interfaces 2>/dev/null); do [[ \"$iface\" =~ ^[a-zA-Z0-9_.-]+$ ]] || continue; rx=$(cat \"/sys/class/net/$iface/statistics/rx_bytes\" 2>/dev/null || echo 0); tx=$(cat \"/sys/class/net/$iface/statistics/tx_bytes\" 2>/dev/null || echo 0); conf=" + Util.shellQuote(root.profilesDir) + "/\"${iface}.conf\"; ep=$(grep -i '^[[:space:]]*Endpoint' \"$conf\" 2>/dev/null | cut -d= -f2- | tr -d ' \\r\\n'); allowed=$(grep -i '^[[:space:]]*AllowedIPs' \"$conf\" 2>/dev/null | cut -d= -f2- | tr -d '\\r\\n'); echo \"$iface\"$'\\t'\"$rx\"$'\\t'\"$tx\"$'\\t'\"$ep\"$'\\t'\"$allowed\"; done"]
+    command: [
+      "bash", "-c",
+      "for iface in $(wg show interfaces 2>/dev/null); do " +
+      "[[ \"$iface\" =~ ^[a-zA-Z0-9_.-]+$ ]] || continue; " +
+      "rx=0; tx=0; ep=\"\"; allowed=\"\"; " +
+      "[[ -r \"/sys/class/net/$iface/statistics/rx_bytes\" ]] && read -r rx < \"/sys/class/net/$iface/statistics/rx_bytes\"; " +
+      "[[ -r \"/sys/class/net/$iface/statistics/tx_bytes\" ]] && read -r tx < \"/sys/class/net/$iface/statistics/tx_bytes\"; " +
+      "conf=" + Util.shellQuote(root.profilesDir) + "/\"${iface}.conf\"; " +
+      "if [[ -r \"$conf\" ]]; then " +
+      "  while IFS=\"=\" read -r rawk rawv || [[ -n \"$rawk\" ]]; do " +
+      "    k=\"${rawk//[[:space:]]/}\"; v=\"${rawv//[[:space:]]/}\"; " +
+      "    case \"${k,,}\" in " +
+      "      endpoint) ep=\"$v\" ;; " +
+      "      allowedips) allowed=\"$v\" ;; " +
+      "    esac; " +
+      "  done < \"$conf\"; " +
+      "fi; " +
+      "printf \"%s\\t%s\\t%s\\t%s\\t%s\\n\" \"$iface\" \"$rx\" \"$tx\" \"$ep\" \"$allowed\"; " +
+      "done"
+    ]
     stdout: StdioCollector { id: healthStdout; waitForEnd: true }
     onExited: function(exitCode) {
       if (exitCode !== 0) return
@@ -301,7 +320,7 @@ Item {
       root._previousHealth = next
       root._healthSampleTime = now
 
-      if (root.connected && !pingProcess.running) {
+      if (root.connected && root.activeMonitoring && !pingProcess.running) {
         pingProcess.running = true
       }
     }

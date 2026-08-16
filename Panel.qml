@@ -17,6 +17,10 @@ Panel {
   property string focusSection: "rows"
   property int rowIndex: 0
   property int toggleIndex: 0
+
+  onVisibleChanged: { if (vpn) vpn.panelOpen = visible }
+  Component.onCompleted: { if (vpn) vpn.panelOpen = true }
+  Component.onDestruction: { if (vpn) vpn.panelOpen = false }
   // Inside the header: 0 is the gear, 1 reconnect, 2 the master switch.
   property int headerIndex: 2
   // The widget's own settings, as opposed to the tool's. They replace the body

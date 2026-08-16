@@ -141,7 +141,27 @@ Item {
     return backend ? backend.backendId + "|" + backend.summary : "direct"
   }
 
+  property bool panelOpen: false
+  property bool notificationsEnabled: true
+  property string _previousConnectionKey: ""
+
+  Process {
+    id: notifyProcess
+    running: false
+    command: []
+  }
+
+  function notify(title, message, icon, urgency) {
+    if (!notificationsEnabled) return
+    var u = urgency || "normal"
+    var ic = icon || "network-vpn"
+    notifyProcess.command = ["notify-send", "-a", "WireGuard", "-i", ic, "-u", u, title, message]
+    notifyProcess.running = true
+  }
+
   onConnectionKeyChanged: {
+    var oldKey = _previousConnectionKey
+    _previousConnectionKey = connectionKey
     publicIp = ""
     geoCity = ""
     geoRegion = ""
@@ -153,11 +173,22 @@ Item {
     _ipRetryCount = 0
     ipFetching = true
     ipSettle.restart()
+
+    if (oldKey !== "" && oldKey !== undefined) {
+      if (connectedBackend !== null) {
+        notify("VPN Connected", connectedBackend.summary, "network-vpn", "normal")
+      } else if (oldKey !== "direct") {
+        notify("VPN Disconnected", "Reverted to direct network", "network-vpn-disconnected", "normal")
+      }
+    }
   }
 
   // A shell restart inherits whatever tunnel was already up, so no change ever
   // fires. One request at startup gives the bar tooltip something to say.
-  Component.onCompleted: ipSettle.restart()
+  Component.onCompleted: {
+    _previousConnectionKey = connectionKey
+    ipSettle.restart()
+  }
 
   function refreshPublicIp() {
     if (ipProcess.running) {
@@ -405,6 +436,7 @@ Item {
     id: wireGuard
     settings: root.settings
     geoInfo: root.geoInfo
+    activeMonitoring: root.panelOpen
   }
 
   Timer {
