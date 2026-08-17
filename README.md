@@ -72,6 +72,27 @@ Add `"yeleticc.vpn"` to your `~/.config/omarchy/shell.json` in the `bar.layout.r
 
 ---
 
+## Uninstallation / Removal
+
+### Via Omarchy Marketplace
+1. Open the Omarchy Menu ➔ **Setup** ➔ **Plugins**.
+2. Locate **VPN** (`yeleticc.vpn`) and click **Disable** or **Uninstall**.
+
+### Manual Removal
+To completely remove the plugin from your system:
+
+```bash
+# 1. Remove the plugin directory
+rm -rf ~/.config/omarchy/plugins/yeleticc.vpn
+
+# 2. Rescan plugins to update the running shell
+omarchy-shell shell rescanPlugins
+```
+
+*(Optional: Remove `"yeleticc.vpn"` from your `~/.config/omarchy/shell.json` if you added it manually).*
+
+---
+
 ## Profiles Setup
 
 Place your WireGuard configuration files (`*.conf`) into:
