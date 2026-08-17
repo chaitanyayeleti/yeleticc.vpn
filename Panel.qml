@@ -314,6 +314,10 @@ Panel {
       return
     }
     if (!backend) return
+    if (row.blocked) {
+      vpn.setNotice("Blocked: Profile contains executable root hooks (PostUp/PreUp).")
+      return
+    }
     // Through the controller, never straight to the backend: picking a tunnel
     // means the others come down first.
     vpn.connectVia(backend, row)
@@ -428,6 +432,7 @@ Panel {
         var candidate = targets[i]
         if (candidate.key === wanted || candidate.key === byCode
             || candidate.detail === wanted || candidate.label === wanted) {
+          if (candidate.blocked) return "blocked: profile contains root hooks (PostUp/PreUp)"
           vpn.connectVia(vpn.active, candidate)
           return "ok"
         }

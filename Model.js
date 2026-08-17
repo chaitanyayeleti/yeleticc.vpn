@@ -287,17 +287,50 @@ function wgDetails(profiles, healthByInterface, pingInfo, geoInfo) {
   return rows
 }
 
+function hasDangerousHooks(confText) {
+  var lines = String(confText || "").split("\n")
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim()
+    if (line.indexOf("#") === 0 || line.indexOf(";") === 0) continue
+    if (/^(preup|postup|predown|postdown)\s*=/i.test(line)) {
+      return true
+    }
+  }
+  return false
+}
+
+function parseProfileListing(raw) {
+  var list = []
+  var lines = String(raw || "").split("\n")
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim()
+    if (line === "") continue
+    var parts = line.split("\t")
+    var path = parts[0].trim()
+    var hasHooks = parts.length > 1 ? parts[1].trim() === "has_hooks" : false
+    if (path !== "") {
+      list.push({ path: path, hasHooks: hasHooks })
+    }
+  }
+  return list
+}
+
 function wgTargets(profiles) {
   var targets = []
   for (var i = 0; i < profiles.length; i++) {
     var profile = profiles[i]
+    var detailText = profile.hasHooks
+      ? "Blocked: contains root hooks"
+      : (profile.active ? "Connected" : "WireGuard profile")
     targets.push({
       key: "profile:" + profile.name,
       label: profile.name,
-      detail: profile.active ? "Connected" : "WireGuard profile",
-      glyph: GLYPH_SHIELD,
+      detail: detailText,
+      glyph: profile.hasHooks ? GLYPH_SHIELD_OFF : GLYPH_SHIELD,
       confFile: profile.confFile,
-      active: profile.active
+      active: profile.active,
+      hasHooks: profile.hasHooks === true,
+      blocked: profile.hasHooks === true
     })
   }
   return targets
@@ -309,3 +342,4 @@ function activeWgProfile(profiles) {
   }
   return null
 }
+

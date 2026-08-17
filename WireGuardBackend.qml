@@ -128,6 +128,13 @@ Item {
   function connectTo(target) {
     if (!detected || _working || !target || !target.confFile) return
 
+    if (target.blocked || target.hasHooks) {
+      root.lastError = "Blocked: Profile contains executable root hooks (PostUp/PreUp). Remove hooks to connect."
+      root.actionStatus = "Blocked for security"
+      actionStatusTimer.restart()
+      return
+    }
+
     _desired = 1
     _pendingTarget = target
     lastError = ""
@@ -199,15 +206,18 @@ Item {
   // list carries a raw conf path to the parser instead of a name the widget
   // invented. The active flag comes from `wg show interfaces`, matched on the
   // interface name wg-quick derives from the basename.
-  function applyProfiles(files) {
+  function applyProfiles(entries) {
     var list = []
-    for (var i = 0; i < files.length; i++) {
-      var confFile = files[i]
+    for (var i = 0; i < entries.length; i++) {
+      var item = entries[i]
+      var confFile = typeof item === "string" ? item : item.path
+      var hasHooks = typeof item === "object" ? item.hasHooks === true : false
       var name = Model.wgInterfaceFor(confFile)
       if (name === "") continue
       list.push({
         name: name,
         confFile: confFile,
+        hasHooks: hasHooks,
         active: root.upInterfaces.indexOf(name) !== -1
       })
     }
@@ -232,12 +242,24 @@ Item {
     }
   }
 
-  // List *.conf profiles in the profiles directory. Auto-creates the profiles
-  // directory with 0700 permissions so other users cannot list profile names.
+  // List *.conf profiles in the profiles directory and scan for dangerous root
+  // execution hooks (PostUp/PreUp/PreDown/PostDown) before offering to connect.
   Process {
     id: listProcess
     running: false
-    command: ["bash", "-c", "mkdir -m 0700 -p " + Util.shellQuote(root.profilesDir) + " 2>/dev/null; chmod 0700 " + Util.shellQuote(root.profilesDir) + " 2>/dev/null; ls -1 " + Util.shellQuote(root.profilesDir) + "/*.conf 2>/dev/null || true"]
+    command: [
+      "bash", "-c",
+      "mkdir -m 0700 -p " + Util.shellQuote(root.profilesDir) + " 2>/dev/null; " +
+      "chmod 0700 " + Util.shellQuote(root.profilesDir) + " 2>/dev/null; " +
+      "for f in " + Util.shellQuote(root.profilesDir) + "/*.conf; do " +
+      "  [[ -r \"$f\" ]] || continue; " +
+      "  h=\"safe\"; " +
+      "  if grep -Eiq '^[[:space:]]*(preup|postup|predown|postdown)[[:space:]]*=' \"$f\" 2>/dev/null; then " +
+      "    h=\"has_hooks\"; " +
+      "  fi; " +
+      "  printf \"%s\\t%s\\n\" \"$f\" \"$h\"; " +
+      "done || true"
+    ]
     stdout: StdioCollector { id: listStdout; waitForEnd: true }
     stderr: StdioCollector { id: listStderr; waitForEnd: true }
     onExited: function(exitCode) {
@@ -246,13 +268,8 @@ Item {
         return
       }
       root.lastError = ""
-      var files = []
-      var lines = String(listStdout.text || "").split("\n")
-      for (var i = 0; i < lines.length; i++) {
-        var path = lines[i].trim()
-        if (path !== "") files.push(path)
-      }
-      root._pendingFiles = files
+      var entries = Model.parseProfileListing(String(listStdout.text || ""))
+      root._pendingFiles = entries
       statusProcess.running = true
     }
   }
