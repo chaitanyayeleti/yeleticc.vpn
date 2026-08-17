@@ -160,35 +160,6 @@ function parseWgInterfaces(raw) {
   return names
 }
 
-// `wg show all dump` has a five-field interface line followed by one
-// tab-separated nine-field line per peer. Keep only the public health data;
-// in particular, never retain private or preshared keys in widget state.
-function parseWgDump(raw) {
-  var health = {}
-  var lines = String(raw || "").split("\n")
-  for (var i = 0; i < lines.length; i++) {
-    var fields = lines[i].split("\t")
-    var iface = String(fields[0] || "").trim()
-    if (iface === "") continue
-    if (!health[iface]) health[iface] = {
-      endpoints: [], lastHandshake: 0, rxBytes: 0, txBytes: 0, defaultRoute: false
-    }
-    if (fields.length < 9) continue
-    var entry = health[iface]
-    var endpoint = String(fields[3] || "")
-    if (endpoint !== "" && endpoint !== "(none)" && entry.endpoints.indexOf(endpoint) < 0) entry.endpoints.push(endpoint)
-    var allowed = String(fields[4] || "").split(",")
-    for (var j = 0; j < allowed.length; j++) {
-      var cidr = allowed[j].trim()
-      if (cidr === "0.0.0.0/0" || cidr === "::/0") entry.defaultRoute = true
-    }
-    entry.lastHandshake = Math.max(entry.lastHandshake, parseInt(fields[5], 10) || 0)
-    entry.rxBytes += parseInt(fields[6], 10) || 0
-    entry.txBytes += parseInt(fields[7], 10) || 0
-  }
-  return health
-}
-
 function parseSysfsStats(raw) {
   var health = {}
   var lines = String(raw || "").split("\n")

@@ -4,7 +4,7 @@ A modern, native WireGuard VPN widget and management panel for the **Omarchy Des
 
 ![Omarchy Plugin](https://img.shields.io/badge/Omarchy-Quattro%20Plugin-blue?style=flat-square)
 ![Version](https://img.shields.io/badge/Version-1.2.1-indigo?style=flat-square)
-![Tests](https://img.shields.io/badge/Tests-22%20passed-brightgreen?style=flat-square)
+![Tests](https://img.shields.io/badge/Tests-21%20passed-brightgreen?style=flat-square)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)
 ![Category: Network](https://img.shields.io/badge/Category-Network-orange?style=flat-square)
 

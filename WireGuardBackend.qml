@@ -233,11 +233,11 @@ Item {
   }
 
   // List *.conf profiles in the profiles directory. Auto-creates the profiles
-  // directory if missing so the user has a directory ready to drop configs into.
+  // directory with 0700 permissions so other users cannot list profile names.
   Process {
     id: listProcess
     running: false
-    command: ["bash", "-c", "mkdir -p " + Util.shellQuote(root.profilesDir) + " 2>/dev/null; ls -1 " + Util.shellQuote(root.profilesDir) + "/*.conf 2>/dev/null || true"]
+    command: ["bash", "-c", "mkdir -m 0700 -p " + Util.shellQuote(root.profilesDir) + " 2>/dev/null; chmod 0700 " + Util.shellQuote(root.profilesDir) + " 2>/dev/null; ls -1 " + Util.shellQuote(root.profilesDir) + "/*.conf 2>/dev/null || true"]
     stdout: StdioCollector { id: listStdout; waitForEnd: true }
     stderr: StdioCollector { id: listStderr; waitForEnd: true }
     onExited: function(exitCode) {

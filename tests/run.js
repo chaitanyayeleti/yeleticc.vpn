@@ -134,16 +134,6 @@ test("parseWgInterfaces reads whitespace-separated interface names", () => {
   eq(Model.parseWgInterfaces("  \n"), [])
 })
 
-test("parseWgDump exposes health data without secrets", () => {
-  const health = Model.parseWgDump("wg0\tprivate\tpublic\t51820\t0\nwg0\tpeer\tpsk\tvpn.example:51820\t0.0.0.0/0, ::/0\t100\t2048\t1024\t25\n")
-  eq(health.wg0.endpoints, ["vpn.example:51820"])
-  eq(health.wg0.lastHandshake, 100)
-  eq(health.wg0.rxBytes, 2048)
-  eq(health.wg0.txBytes, 1024)
-  eq(health.wg0.defaultRoute, true)
-  eq(Model.formatHandshakeAge(100, 161), "1m ago")
-})
-
 test("parseSysfsStats extracts interface statistics and profile metadata without root", () => {
   const sample = "minipc_canada\t428036\t5028832\t195.242.214.130:51820\t0.0.0.0/0, ::/0\n"
   const health = Model.parseSysfsStats(sample)
