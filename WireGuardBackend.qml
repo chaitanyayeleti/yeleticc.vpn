@@ -45,7 +45,6 @@ Item {
 
   property bool _wgPresent: false
   property bool _probed: false
-  property int _probesDone: 0
   // -1 follows reality, 0/1 overrides it while a command is in flight, so the
   // switch flips the instant it is clicked instead of waiting a poll cycle.
   property int _desired: -1
@@ -109,13 +108,10 @@ Item {
   function detect(force) {
     if (wgProbe.running) return
     if (_probed && force !== true) return
-    _probesDone = 0
     wgProbe.running = true
   }
 
   function _probeFinished() {
-    root._probesDone += 1
-    if (root._probesDone < 1) return
     root._probed = true
     if (root._toolsPresent) root.refresh()
   }
@@ -202,6 +198,99 @@ Item {
     Quickshell.execDetached(["xdg-open", root.profilesDir])
   }
 
+  function pickAndImport() {
+    if (pickerProcess.running) return
+    pickerProcess.running = true
+  }
+
+  Process {
+    id: pickerProcess
+    running: false
+    command: [
+      "bash", "-c",
+      "picker=\"$HOME/.config/omarchy/plugins/yeleticc.vpn/scripts/pick-conf\"; " +
+      "dest=" + Util.shellQuote(root.profilesDir) + "; " +
+      "mkdir -m 0700 -p \"$dest\" 2>/dev/null; " +
+      "picked=\"\"; " +
+      "if [[ -x \"$picker\" ]]; then " +
+      "  picked=$(\"$picker\" 2>/dev/null || true); " +
+      "elif command -v zenity >/dev/null 2>&1; then " +
+      "  picked=$(zenity --file-selection --file-filter='WireGuard Config (*.conf) | *.conf' --title='Select WireGuard Configuration' 2>/dev/null || true); " +
+      "elif command -v kdialog >/dev/null 2>&1; then " +
+      "  picked=$(kdialog --getopenfilename \"$HOME/Downloads\" \"*.conf|WireGuard Config (*.conf)\" 2>/dev/null || true); " +
+      "fi; " +
+      "[[ -z \"$picked\" ]] && exit 0; " +
+      "[[ ! -r \"$picked\" ]] && { echo \"Cannot read file\" >&2; exit 1; }; " +
+      "base=$(basename \"$picked\"); " +
+      "[[ \"$base\" != *.conf ]] && { echo \"Must be a .conf file\" >&2; exit 1; }; " +
+      "clean=$(echo \"$base\" | tr -cd 'a-zA-Z0-9_.-'); " +
+      "[[ -z \"$clean\" ]] && clean=\"wg_imported.conf\"; " +
+      "cp -f \"$picked\" \"$dest/$clean\"; " +
+      "chmod 0600 \"$dest/$clean\"; " +
+      "chmod 0700 \"$dest\"; " +
+      "echo \"$clean\""
+    ]
+    stdout: StdioCollector { id: pickerStdout; waitForEnd: true }
+    stderr: StdioCollector { id: pickerStderr; waitForEnd: true }
+    onExited: function(exitCode) {
+      if (exitCode !== 0) {
+        root.lastError = Model.elide(String(pickerStderr.text || "") || "Failed to import profile", 140)
+        return
+      }
+      var name = String(pickerStdout.text || "").trim()
+      if (name !== "") {
+        root.lastError = ""
+        root.actionStatus = "Imported " + name
+        actionStatusTimer.restart()
+        root.refresh()
+      }
+    }
+  }
+
+  function removeProfile(target) {
+    if (!target) return
+    var name = typeof target === "object" ? (target.name || target.label) : String(target)
+    if (!name) return
+
+    if (root.activeProfile && (root.activeProfile.name === name || root.activeProfile.label === name)) {
+      root.disconnect()
+    }
+
+    removeProcess.command = [
+      "bash", "-c",
+      "dest=" + Util.shellQuote(root.profilesDir) + "; " +
+      "target=" + Util.shellQuote(name) + "; " +
+      "f=\"$dest/${target}.conf\"; " +
+      "if [[ -f \"$f\" ]]; then " +
+      "  rm -f \"$f\"; " +
+      "  echo \"$target\"; " +
+      "else " +
+      "  echo \"File not found\" >&2; exit 1; " +
+      "fi"
+    ]
+    removeProcess.running = true
+  }
+
+  Process {
+    id: removeProcess
+    running: false
+    stdout: StdioCollector { id: removeStdout; waitForEnd: true }
+    stderr: StdioCollector { id: removeStderr; waitForEnd: true }
+    onExited: function(exitCode) {
+      if (exitCode !== 0) {
+        root.lastError = Model.elide(String(removeStderr.text || "") || "Failed to remove profile", 140)
+        return
+      }
+      var name = String(removeStdout.text || "").trim()
+      if (name !== "") {
+        root.lastError = ""
+        root.actionStatus = "Removed " + name
+        actionStatusTimer.restart()
+        root.refresh()
+      }
+    }
+  }
+
   // A config appearing mid-session (or being renamed) should show up, so the
   // list carries a raw conf path to the parser instead of a name the widget
   // invented. The active flag comes from `wg show interfaces`, matched on the
@@ -255,6 +344,8 @@ Item {
       "  [[ -r \"$f\" ]] || continue; " +
       "  h=\"safe\"; " +
       "  if grep -Eiq '^[[:space:]]*(preup|postup|predown|postdown)[[:space:]]*=' \"$f\" 2>/dev/null; then " +
+      "    h=\"has_hooks\"; " +
+      "  elif (($? != 1)); then " +
       "    h=\"has_hooks\"; " +
       "  fi; " +
       "  printf \"%s\\t%s\\n\" \"$f\" \"$h\"; " +

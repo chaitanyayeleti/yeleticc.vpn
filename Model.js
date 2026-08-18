@@ -16,6 +16,7 @@ var GLYPH_UPLOAD = String.fromCodePoint(0xF01DC)
 var GLYPH_SPEED = String.fromCodePoint(0xF04D4)
 var GLYPH_LOCK = String.fromCodePoint(0xF033E)
 var GLYPH_SHIELD_OFF = String.fromCodePoint(0xF099E)
+var GLYPH_TRASH = String.fromCodePoint(0xF0547)
 
 // ----------------------------------------------------------------- shared
 
@@ -324,6 +325,7 @@ function wgTargets(profiles) {
       : (profile.active ? "Connected" : "WireGuard profile")
     targets.push({
       key: "profile:" + profile.name,
+      name: profile.name,
       label: profile.name,
       detail: detailText,
       glyph: profile.hasHooks ? GLYPH_SHIELD_OFF : GLYPH_SHIELD,

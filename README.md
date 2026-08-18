@@ -3,7 +3,7 @@
 A modern, native WireGuard VPN widget and management panel for the **Omarchy Desktop Shell**.
 
 ![Omarchy Plugin](https://img.shields.io/badge/Omarchy-Quattro%20Plugin-blue?style=flat-square)
-![Version](https://img.shields.io/badge/Version-1.2.2-indigo?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.2.3-indigo?style=flat-square)
 ![Tests](https://img.shields.io/badge/Tests-24%20passed-brightgreen?style=flat-square)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)
 ![Category: Network](https://img.shields.io/badge/Category-Network-orange?style=flat-square)
@@ -145,6 +145,29 @@ You can interact with the plugin directly from the terminal or keybindings using
 | `omarchy-shell yeleticc.vpn disconnect` | Disconnect active tunnel |
 | `omarchy-shell yeleticc.vpn open` | Open the VPN panel |
 | `omarchy-shell yeleticc.vpn refresh` | Force a refresh cycle |
+
+---
+
+## Changelog
+
+### **v1.2.3**
+- **📥 Native Graphical Profile Import**: Added 1-click profile selection using a native, theme-synced graphical file dialog with full filesystem navigation.
+- **🛡️ Auto-Permission Security**: Automatically sets `chmod 0600` on imported `.conf` files and enforces `chmod 0700` on `~/.config/omarchy/vpn/profiles/`.
+- **🗑️ 1-Click Profile Removal**: Dedicated trash button (`󰆴`) on profile rows with auto-disconnect safety before file deletion.
+- **🔔 Fixed Double / Contradictory Notifications**: Fixed the intermediate state race where `"VPN Connected: Not connected"` was fired on connect, and added 800ms debounce to suppress spurious disconnect toasts during tunnel handovers.
+- **🧹 Codebase Optimization**: Cleaned up dead functions, fixed master switch cursor indexing (`root.setHeaderCursor(2)`), and added fail-closed checks for hook scanner errors.
+
+### **v1.2.2**
+- **🛡️ Hook Directive Security Scanning**: Added pre-flight scanning for `PreUp`, `PostUp`, `PreDown`, and `PostDown` arbitrary root execution directives; blocked unsafe profiles from executing via `pkexec`.
+- **🔒 Directory Permissions Enforcement**: Enforced strict `0700` permissions on the profiles directory to prevent multi-user enumeration.
+- **🧪 Test Suite Expansion**: Expanded automated unit test suite to 24 tests.
+
+### **v1.2.1**
+- **🧹 Codebase Cleanup**: Removed legacy unused `parseWgDump` parser.
+- **📖 Documentation**: Added complete removal and uninstallation guide for Omarchy marketplace and manual setups.
+
+### **v1.2.0**
+- **⚡ Kernel State Synchronization**: Bound `connectionKey` directly to kernel interface status for accurate post-disconnect public IP updates.
 
 ---
 

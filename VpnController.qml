@@ -55,13 +55,6 @@ Item {
       if (available[i].backendId === selectedId) return available[i]
     }
 
-    var preferred = preferredId()
-    if (preferred !== "") {
-      for (var j = 0; j < available.length; j++) {
-        if (available[j].backendId === preferred) return available[j]
-      }
-    }
-
     // Auto: whichever tool is actually carrying traffic wins, so the panel
     // opens on the connection you are using rather than on a list order.
     for (var k = 0; k < available.length; k++) {
@@ -144,11 +137,19 @@ Item {
         break
       }
     }
-    return activeBackend ? activeBackend.backendId + "|" + activeBackend.summary : "direct"
+    if (!activeBackend) return "direct"
+    var sum = String(activeBackend.summary || "").trim()
+    if (sum === "" || sum === "Not connected" || sum === "No profiles") {
+      var prof = activeBackend.activeProfile
+      if (prof && prof.name) sum = prof.name
+      else return "direct"
+    }
+    return activeBackend.backendId + "|" + sum
   }
 
   property bool notificationsEnabled: true
   property string _previousConnectionKey: ""
+  property string _lastNotifiedKey: ""
 
   Process {
     id: notifyProcess
@@ -171,6 +172,18 @@ Item {
     notifyProcess.running = true
   }
 
+  Timer {
+    id: disconnectNotifyTimer
+    interval: 800
+    repeat: false
+    onTriggered: {
+      if (connectionKey === "direct" && _lastNotifiedKey !== "direct" && _lastNotifiedKey !== "") {
+        _lastNotifiedKey = "direct"
+        notify("VPN Disconnected", "Reverted to direct network", Model.GLYPH_SHIELD_OFF, "normal")
+      }
+    }
+  }
+
   onConnectionKeyChanged: {
     var oldKey = _previousConnectionKey
     _previousConnectionKey = connectionKey
@@ -188,10 +201,16 @@ Item {
 
     if (oldKey !== "" && oldKey !== undefined) {
       if (connectionKey !== "direct") {
-        var summary = connectionKey.split("|")[1] || "Active"
-        notify("VPN Connected", summary, Model.GLYPH_SHIELD, "normal")
+        disconnectNotifyTimer.stop()
+        var summary = connectionKey.split("|")[1] || ""
+        if (summary !== "" && summary !== "Not connected" && summary !== "No profiles") {
+          if (_lastNotifiedKey !== connectionKey) {
+            _lastNotifiedKey = connectionKey
+            notify("VPN Connected", summary, Model.GLYPH_SHIELD, "normal")
+          }
+        }
       } else if (oldKey !== "direct") {
-        notify("VPN Disconnected", "Reverted to direct network", Model.GLYPH_SHIELD_OFF, "normal")
+        disconnectNotifyTimer.restart()
       }
     }
   }
@@ -200,6 +219,7 @@ Item {
   // fires. One request at startup gives the bar tooltip something to say.
   Component.onCompleted: {
     _previousConnectionKey = connectionKey
+    _lastNotifiedKey = connectionKey
     ipSettle.restart()
   }
 
@@ -284,10 +304,6 @@ Item {
     if (n < min) n = min
     if (n > max) n = max
     return n
-  }
-
-  function preferredId() {
-    return ""
   }
 
   function selectBackend(backendId) {

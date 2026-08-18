@@ -561,7 +561,7 @@ Panel {
                 Text {
                   id: flagOrGlobe
                   text: vpn.geoFlag !== "" ? vpn.geoFlag : Model.GLYPH_GLOBE
-                  color: vpn.geoFlag !== "" ? undefined : ipLabel.badgeColor
+                  color: ipLabel.badgeColor
                   font.pixelSize: vpn.geoFlag !== "" ? Style.space(13) : Style.font.bodySmall
                   anchors.verticalCenter: parent.verticalCenter
                 }
@@ -653,7 +653,7 @@ Panel {
               busy: root.backend ? root.backend.busy : false
               hasCursor: root.headerHasCursor && root.headerIndex === 2
               foreground: root.foreground
-              onHovered: function(on) { if (on) root.setHeaderCursor(1) }
+              onHovered: function(on) { if (on) root.setHeaderCursor(2) }
               onToggled: vpn.toggleActive()
 
               PanelToolTip {
@@ -911,7 +911,7 @@ Panel {
             Column {
               visible: root.rows.length === 0 && !root.providersOpen && root.backend !== null
               width: parent.width
-              spacing: Style.space(8)
+              spacing: Style.space(10)
 
               Text {
                 width: parent.width
@@ -925,8 +925,8 @@ Panel {
 
               CursorSurface {
                 width: parent.width
-                implicitHeight: openDirContent.implicitHeight + Style.spacing.rowPaddingX
-                hasCursor: root.cursorActive && root.focusSection === "rows"
+                implicitHeight: importEmptyContent.implicitHeight + Style.spacing.rowPaddingX
+                hasCursor: root.cursorActive && root.focusSection === "rows" && root.rowIndex === 0
                 foreground: root.foreground
 
                 MouseArea {
@@ -934,6 +934,48 @@ Panel {
                   hoverEnabled: true
                   cursorShape: Qt.PointingHandCursor
                   onEntered: root.setRowCursor(0)
+                  onClicked: if (root.backend && typeof root.backend.pickAndImport === "function") root.backend.pickAndImport()
+                }
+
+                RowLayout {
+                  id: importEmptyContent
+                  anchors.left: parent.left
+                  anchors.right: parent.right
+                  anchors.verticalCenter: parent.verticalCenter
+                  anchors.leftMargin: Style.space(10)
+                  anchors.rightMargin: Style.space(10)
+                  spacing: Style.space(8)
+
+                  Text {
+                    text: Model.GLYPH_DOWNLOAD
+                    color: "#22c55e"
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.icon
+                    Layout.alignment: Qt.AlignVCenter
+                  }
+
+                  Text {
+                    Layout.fillWidth: true
+                    text: "Select & Import Profile (.conf)"
+                    color: root.foreground
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.body
+                    elide: Text.ElideRight
+                  }
+                }
+              }
+
+              CursorSurface {
+                width: parent.width
+                implicitHeight: openDirContent.implicitHeight + Style.spacing.rowPaddingX
+                hasCursor: root.cursorActive && root.focusSection === "rows" && root.rowIndex === 1
+                foreground: root.foreground
+
+                MouseArea {
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onEntered: root.setRowCursor(1)
                   onClicked: if (root.backend && typeof root.backend.openProfilesFolder === "function") root.backend.openProfilesFolder()
                 }
 
@@ -981,6 +1023,46 @@ Panel {
                   cursorIndex: index
                 }
               }
+
+              CursorSurface {
+                visible: root.rows.length > 0 && !root.providersOpen && root.backend !== null
+                width: parent.width
+                implicitHeight: importMoreContent.implicitHeight + Style.spacing.rowPaddingX
+                foreground: root.foreground
+
+                MouseArea {
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: if (root.backend && typeof root.backend.pickAndImport === "function") root.backend.pickAndImport()
+                }
+
+                RowLayout {
+                  id: importMoreContent
+                  anchors.left: parent.left
+                  anchors.right: parent.right
+                  anchors.verticalCenter: parent.verticalCenter
+                  anchors.leftMargin: Style.space(10)
+                  anchors.rightMargin: Style.space(10)
+                  spacing: Style.space(8)
+
+                  Text {
+                    text: Model.GLYPH_DOWNLOAD
+                    color: root.dim
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.icon
+                    Layout.alignment: Qt.AlignVCenter
+                  }
+
+                  Text {
+                    Layout.fillWidth: true
+                    text: "Import Another Profile (.conf)"
+                    color: root.dim
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.bodySmall
+                    elide: Text.ElideRight
+                  }
+                }
             }
           }
         }
@@ -1065,6 +1147,38 @@ Panel {
         font.family: root.fontFamily
         font.pixelSize: Style.font.icon
         Layout.alignment: Qt.AlignVCenter
+      }
+
+      Rectangle {
+        visible: !targetRow.isProvider && root.backend && typeof root.backend.removeProfile === "function"
+        width: Style.space(24)
+        height: Style.space(24)
+        radius: Style.space(4)
+        color: deleteMouse.containsMouse ? Util.alpha(root.urgent, 0.18) : "transparent"
+        Layout.alignment: Qt.AlignVCenter
+        z: 10
+
+        Text {
+          anchors.centerIn: parent
+          text: Model.GLYPH_TRASH
+          color: deleteMouse.containsMouse ? root.urgent : root.dim
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+        }
+
+        MouseArea {
+          id: deleteMouse
+          anchors.fill: parent
+          hoverEnabled: true
+          cursorShape: Qt.PointingHandCursor
+          onClicked: function(mouse) {
+            mouse.accepted = true
+            var row = targetRow.row
+            if (row && (row.name || row.label)) {
+              root.backend.removeProfile(row.name || row.label)
+            }
+          }
+        }
       }
 
       ToggleSwitch {
@@ -1230,4 +1344,5 @@ Panel {
       }
     }
   }
+}
 }
