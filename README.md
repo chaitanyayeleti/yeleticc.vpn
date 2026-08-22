@@ -3,7 +3,7 @@
 A modern, native WireGuard VPN widget and management panel for the **Omarchy Desktop Shell**.
 
 ![Omarchy Plugin](https://img.shields.io/badge/Omarchy-Quattro%20Plugin-blue?style=flat-square)
-![Version](https://img.shields.io/badge/Version-1.2.3-indigo?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.2.4-indigo?style=flat-square)
 ![Tests](https://img.shields.io/badge/Tests-24%20passed-brightgreen?style=flat-square)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)
 ![Category: Network](https://img.shields.io/badge/Category-Network-orange?style=flat-square)
@@ -149,6 +149,9 @@ You can interact with the plugin directly from the terminal or keybindings using
 ---
 
 ## Changelog
+
+### **v1.2.4**
+- **🔑 Silent Connect With Passwordless Sudo**: Added a one-time startup probe (`sudo -n wg-quick --help`) that detects a NOPASSWD sudoers rule for `wg-quick`; when available, connect / disconnect / reconnect run silently via `sudo -n wg-quick` instead of raising the polkit password dialog every time. Machines without passwordless sudo keep the existing `pkexec` flow unchanged. *(PR [#1](https://github.com/chaitanyayeleti/yeleticc.vpn/pull/1) by [@Rombond](https://github.com/Rombond))*
 
 ### **v1.2.3**
 - **📥 Native Graphical Profile Import**: Added 1-click profile selection using a native, theme-synced graphical file dialog with full filesystem navigation.
