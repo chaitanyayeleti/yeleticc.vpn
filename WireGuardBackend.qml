@@ -8,8 +8,10 @@ import "Model.js" as Model
 // directory (default ~/.config/omarchy/vpn/profiles/) with wg-quick. The
 // interface name is the config basename, and `wg show interfaces` — which needs
 // no root — reports what is up, so status is pollable without elevation.
-// Connecting runs through pkexec because wg-quick needs root, and there is no
-// passwordless sudo here. Implements the backend contract documented in
+// Connecting needs root. If the machine has passwordless sudo configured for
+// wg-quick specifically (`sudo -n wg-quick ...` succeeds without a prompt),
+// that is used silently; otherwise this falls back to pkexec, which raises a
+// polkit password dialog. Implements the backend contract documented in
 // VpnController.qml.
 Item {
   id: root
@@ -45,6 +47,17 @@ Item {
 
   property bool _wgPresent: false
   property bool _probed: false
+  // Detected once at startup: does `sudo -n wg-quick ...` work without a
+  // password prompt? If so, elevate() prefers it over pkexec so connecting
+  // is silent on machines with a NOPASSWD sudoers rule for wg-quick.
+  property bool _sudoNoPasswd: false
+  property bool _sudoProbed: false
+
+  // Builds the elevated command for a wg-quick action, e.g. elevate(["up", path]).
+  function elevate(args) {
+    var prefix = root._sudoNoPasswd ? ["sudo", "-n"] : ["pkexec"]
+    return prefix.concat(["wg-quick"]).concat(args)
+  }
   // -1 follows reality, 0/1 overrides it while a command is in flight, so the
   // switch flips the instant it is clicked instead of waiting a poll cycle.
   property int _desired: -1
@@ -143,10 +156,10 @@ Item {
     var active = Model.activeWgProfile(profiles)
     if (active && active.confFile !== target.confFile) {
       _stage = "handover"
-      connectProcess.command = ["pkexec", "wg-quick", "down", active.confFile]
+      connectProcess.command = root.elevate(["down", active.confFile])
     } else {
       _stage = "final"
-      connectProcess.command = ["pkexec", "wg-quick", "up", target.confFile]
+      connectProcess.command = root.elevate(["up", target.confFile])
     }
     connectProcess.running = true
   }
@@ -161,7 +174,7 @@ Item {
     _stage = "final"
     lastError = ""
     actionStatus = "Disconnecting…"
-    connectProcess.command = ["pkexec", "wg-quick", "down", active.confFile]
+    connectProcess.command = root.elevate(["down", active.confFile])
     connectProcess.running = true
   }
 
@@ -174,7 +187,7 @@ Item {
     _stage = "handover"
     lastError = ""
     actionStatus = "Reconnecting " + active.name + "…"
-    connectProcess.command = ["pkexec", "wg-quick", "down", active.confFile]
+    connectProcess.command = root.elevate(["down", active.confFile])
     connectProcess.running = true
   }
 
@@ -328,6 +341,19 @@ Item {
     onExited: function(exitCode) {
       root._wgPresent = exitCode === 0
       root._probeFinished()
+    }
+  }
+
+  // `sudo -n` fails immediately instead of prompting when a password would be
+  // required, so this exits 0 only when a NOPASSWD sudoers rule already
+  // covers wg-quick for this user.
+  Process {
+    id: sudoProbe
+    command: ["sudo", "-n", "wg-quick", "--help"]
+    running: true
+    onExited: function(exitCode) {
+      root._sudoNoPasswd = exitCode === 0
+      root._sudoProbed = true
     }
   }
 
@@ -495,7 +521,7 @@ Item {
         return
       }
       root._stage = "final"
-      connectProcess.command = ["pkexec", "wg-quick", "up", target.confFile]
+      connectProcess.command = root.elevate(["up", target.confFile])
       connectProcess.running = true
     }
   }
